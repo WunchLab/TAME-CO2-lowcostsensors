@@ -38,6 +38,8 @@ import serial_port
 import utilities
 from humidity import absolute_humidity
 import DHT22
+from board import D9
+from adafruit_dht import DHT22
 
 # def DHT_sensor(pin):
 # #'''
@@ -904,6 +906,9 @@ def start_logging(interval):
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # set board pin number 11 to input with pull-up resistor
     
+    ## initialize DHT
+    dhtDevice = DHT22(D9)
+    
     ## start the ssh session and sftp instance for sending data
     ssh, sftp = initialize_ssh()
     
@@ -931,18 +936,58 @@ def start_logging(interval):
             
             row.extend(get_logg_sensor_data(port, config)) # Recieve data from HPP sensor
             
-            if DHT_works:
-                
-                raw_DHT = DHT22.DHT_sensor(9) # Recieve temperature and relative humidity from DHT
-                if str(raw_DHT[0]) == 'None': #If DHT returns None then it has stopped working
-                    DHT_works = False
-                    row.extend([-9999,-9999])
-                else:
-                    row.append(int(round(raw_DHT[0],1)*10))
-                    row.append(int(round(raw_DHT[1],1)*10))
+            ## read DHT temperature and humidity using old library
+            dht_tries = 0
+            while True:
+                try:
+                    raw_DHT = DHT22.DHT_sensor(9) # Recieve temperature and relative humidity from DHT
                     
-            else:
-                row.extend([-9999,-9999])
+                    dht_tries += 1
+                    
+                    if str(raw_DHT[0]) == 'None': #If DHT returns None then it has stopped working
+                        if dht_tries < 5:
+                            sleep(0.1)
+                            continue
+                        else:
+                            log("ERROR: DHT read failed after several tries.")
+                            row.extend([-9999,-9999])
+                            break
+                    else:
+                        row.append(int(round(raw_DHT[0],1)*10))
+                        row.append(int(round(raw_DHT[1],1)*10))
+                        break
+                    
+                except Exception as e:
+                    log("ERROR: DHT read failed due to exception: %s" % str(e))
+                    row.extend([-9999,-9999])
+                    break
+
+
+            ## read DHT temperature and humidity using current adafruit DHT library
+            # dht_tries = 0
+            # while True:
+            #     try:
+            #         dhtDevice.measure()
+            #         row.append(int(round(dhtDevice.temperature,1)*10))
+            #         row.append(int(round(dhtDevice.humidity,1)*10))
+                    
+            #         dht_tries += 1
+            #         if dht_tries >= 5:
+            #             raise Exception
+                        
+            #         break
+                        
+            #     except RuntimeError:
+            #         sleep(0.1)
+                    
+            #     except Exception:
+            #         log("ERROR: DHT read failed. Resetting device.")
+            #         row.extend([-9999,-9999])
+            #         dhtDevice.exit()
+            #         sleep(0.2)
+            #         dhtDevice = DHT22(D9)
+            #         break
+
        
             ## read in the CPU temperature
             row.append(round(int(subprocess.run(["cat /sys/class/thermal/thermal_zone0/temp"],
