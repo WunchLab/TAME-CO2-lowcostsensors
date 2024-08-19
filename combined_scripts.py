@@ -38,8 +38,8 @@ import serial_port
 import utilities
 from humidity import absolute_humidity
 import DHT22
-from board import D9
-from adafruit_dht import DHT22
+# from board import D9
+# from adafruit_dht import DHT22
 
 # def DHT_sensor(pin):
 # #'''
@@ -907,7 +907,7 @@ def start_logging(interval):
     GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # set board pin number 11 to input with pull-up resistor
     
     ## initialize DHT
-    dhtDevice = DHT22(D9)
+    # dhtDevice = DHT22(D9)
     
     ## start the ssh session and sftp instance for sending data
     ssh, sftp = initialize_ssh()
