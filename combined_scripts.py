@@ -538,7 +538,7 @@ def communicate(q_data_tuples, ssh, sftp, remote_path):
                     
                     if time_file.hour == 0 and daily_rsync_flag == True:
                         #rsync month directory, local path needs a trailing / so the dir contents are copied instead of the dir itself
-                        output = subprocess.run(["rsync -r --timeout=5 -e 'ssh -p2222' %s %s" 
+                        output = subprocess.run(["rsync -a --timeout=5 -e 'ssh -p2222' %s %s" 
                                                  % (path+'/', 
                                                     os.path.join(remote_path, remote_hires_dir))],
                                                 shell=True, capture_output=True,
